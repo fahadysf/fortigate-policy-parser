@@ -3,4 +3,4 @@ Parse FortiGate (FortiOS) security policies and create output in JSON, TSV or Ex
 
 ### Usage
 
-python fortigate-policy-parser.py -f <config-file> -o <outputfile>.xlsx
+python fortigate-policy-parser.py -f \<config-file\> -o \<outputfile\>.xlsx
