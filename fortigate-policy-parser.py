@@ -3,6 +3,7 @@
 import argparse
 import re
 import pprint
+import openpyxl
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -12,6 +13,11 @@ parser.add_argument('-f', action='store',
                    metavar='<configuration-file>',
                    help='path to configuration file',
                    required=True)
+
+parser.add_argument('-o', action='store',
+					metavar='<output-file>.xls',
+					help='path to configuration file',
+					required=False)
 
 args = parser.parse_args()
 CONFIGFILE = vars(args)['f']
@@ -43,12 +49,34 @@ for line in allpolicies:
 
 print ("Total policies: %d" % len(policydict.keys()))
 
+if 'o' in vars(args):
+    wb = openpyxl.Workbook()
+    sheet = wb.get_active_sheet()
+    sheet.title = "Policies"
+    row = 2
+    columns = list()
+    columns.append('id')
+    for pid in policydict.keys():
+        for key in policydict[pid]:
+            if not key in columns:
+                columns.append(key)
+            if key == 'service' or key == 'srcaddr' or key == 'dstaddr':
+                policydict[pid][key] = policydict[pid][key].replace('" "', '","').replace('"', '')
+                if key == 'service':
+                    policydict[pid][key] = policydict[pid][key].replace('_', '-')
+                policydict[pid][key] = policydict[pid][key].split(',')
 
-for pid in policydict.keys():
-	for key in policydict[pid]:
-		if key == 'service' or key == 'srcaddr' or key == 'dstaddr':
-			policydict[pid][key] = policydict[pid][key].replace('" "', '","').replace('"', '')
-			if key == 'service':
-				policydict[pid][key] = policydict[pid][key].replace('_', '-')
-			policydict[pid][key] = policydict[pid][key].split(',')
-	pp.pprint(policydict[pid])
+    for pid in policydict.keys():
+        sheet.cell(row=row, column=columns.index('id') + 1).value = pid
+        for key in policydict[pid]:
+            if type(policydict[pid][key]) == type(list()):
+                val = ',\n'.join(policydict[pid][key])
+                sheet.cell(row=row, column=columns.index(key)+1).value = val
+            else:
+                sheet.cell(row=row, column=columns.index(key)+1).value = policydict[pid][key]
+        row += 1
+        pp.pprint(policydict[pid])
+    # Write the header
+    for item in columns:
+        sheet.cell(row=1, column=columns.index(item) + 1).value = item
+    wb.save(vars(args)['o'])
